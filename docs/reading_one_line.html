@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading One Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=Sora:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --panel: #ffffff;
+    --ink: #1b2330;
+    --muted: #5d6878;
+    --rule: #d7dde6;
+    --blue: #1f7fb0;
+    --blue-soft: rgba(31, 127, 176, 0.14);
+    --gold: #b7791f;
+    --red: #c2410c;
+    --green: #2f855a;
+    --heat: 31, 127, 176;
+    --heat-bad: 194, 65, 12;
+    --img-filter: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #10151d;
+      --panel: #161d27;
+      --ink: #e6ebf2;
+      --muted: #97a3b4;
+      --rule: #2a3442;
+      --blue: #5cc4e6;
+      --blue-soft: rgba(92, 196, 230, 0.16);
+      --gold: #f2c14e;
+      --red: #f08a5d;
+      --green: #6fcf97;
+      --heat: 92, 196, 230;
+      --heat-bad: 240, 138, 93;
+      --img-filter: invert(1) hue-rotate(180deg);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #10151d;
+    --panel: #161d27;
+    --ink: #e6ebf2;
+    --muted: #97a3b4;
+    --rule: #2a3442;
+    --blue: #5cc4e6;
+    --blue-soft: rgba(92, 196, 230, 0.16);
+    --gold: #f2c14e;
+    --red: #f08a5d;
+    --green: #6fcf97;
+    --heat: 92, 196, 230;
+    --heat-bad: 240, 138, 93;
+    --img-filter: invert(1) hue-rotate(180deg);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 "Spectral", Georgia, "Times New Roman", serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; }
+  h1, h2, h3 { font-family: "Sora", "Helvetica Neue", Arial, sans-serif; text-wrap: balance; line-height: 1.2; }
+  h1 { font-size: clamp(30px, 5vw, 46px); margin: 0 0 12px; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin: 0 0 6px; }
+  h3 { font-size: 16px; margin: 0 0 6px; }
+  p { max-width: 66ch; margin: 0 0 14px; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 62ch; }
+  code, .mono { font-family: "JetBrains Mono", Menlo, Consolas, monospace; font-size: 0.86em; }
+  .shape { font-family: "JetBrains Mono", Menlo, monospace; font-size: 13px; color: var(--gold); white-space: nowrap; }
+  .eyebrow { font-family: "Sora", sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); font-weight: 700; }
+
+  section.scene { display: grid; gap: 18px; padding-block: 44px; border-top: 1px solid var(--rule); }
+  .scene-head { display: grid; gap: 4px; }
+  figure { margin: 0; display: grid; gap: 10px; }
+  figcaption { font-size: 14px; color: var(--muted); max-width: 70ch; }
+  .board { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; overflow-x: auto; }
+  .board svg { display: block; max-width: 100%; height: auto; }
+  .line-img { image-rendering: pixelated; filter: var(--img-filter); display: block; }
+  .fm { image-rendering: pixelated; display: block; width: 100%; height: auto; border-radius: 3px; }
+  .row { display: grid; gap: 14px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+
+  .pipeline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+  .stage { flex: 1 1 130px; border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; background: var(--panel); display: grid; gap: 2px; align-content: start; }
+  .stage b { font-family: "Sora", sans-serif; font-size: 14px; }
+  .stage span { font-size: 13px; color: var(--muted); line-height: 1.35; }
+  .stage.on { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
+
+  .fm-grid { display: grid; grid-template-columns: 170px 1fr; gap: 12px 18px; align-items: center; }
+  @media (max-width: 620px) { .fm-grid { grid-template-columns: 1fr; } }
+  .fm-label { display: grid; gap: 0; }
+  .fm-label b { font-family: "Sora", sans-serif; font-size: 14px; }
+
+  .collapse { display: grid; gap: 8px; font-family: "JetBrains Mono", Menlo, monospace; font-size: 14px; }
+  .collapse .tape { display: flex; flex-wrap: wrap; gap: 2px; }
+  .cell { min-width: 16px; height: 24px; padding: 0 3px; display: inline-grid; place-items: center; border-radius: 3px; background: var(--blue-soft); color: var(--ink); }
+  .cell.blank { background: transparent; color: var(--muted); border: 1px dashed var(--rule); }
+  .cell.gone { opacity: 0.25; text-decoration: line-through; }
+  .step-label { font-family: "Sora", sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .control { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; font-family: "Sora", sans-serif; font-size: 14px; }
+  .control input[type=range] { flex: 1 1 240px; accent-color: var(--blue); }
+  .control button { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+  .control button[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
+  .control button:focus-visible, .control input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .readout { font-family: "JetBrains Mono", monospace; font-size: 14px; }
+  .typed { font-family: "JetBrains Mono", monospace; font-size: 18px; letter-spacing: 0.02em; min-height: 28px; }
+  .typed .cur { background: var(--blue); color: var(--bg); padding: 0 2px; border-radius: 2px; }
+  .typed.bad .cur { background: var(--red); }
+
+  table { border-collapse: collapse; font-size: 15px; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+  th { font-family: "Sora", sans-serif; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  td.num { font-family: "JetBrains Mono", monospace; }
+  .pill { font-family: "Sora", sans-serif; font-size: 12px; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .pill.ok { color: var(--green); border: 1px solid var(--green); }
+  .pill.fail { color: var(--red); border: 1px solid var(--red); }
+  .note { border-left: 3px solid var(--gold); padding: 4px 0 4px 14px; color: var(--ink); max-width: 70ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); font-family: "Sora", sans-serif; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="scene-head" style="gap:10px; padding-bottom: 28px;">
+    <div class="eyebrow">Your OCR model, one line at a time</div>
+    <h1>How “A boy rides a swing.” becomes text</h1>
+    <p class="lede">Follow one real validation image through your trained models: the CNN that turns pixels into columns, the BiLSTM that adds context, and the two heads that turn columns into characters. Every number and picture on this page comes from your checkpoints.</p>
+    <div class="board">
+      <img class="line-img" id="hero-img" alt="The rendered input line: A boy rides a swing." style="width:100%; max-width:816px;">
+    </div>
+    <div class="pipeline" aria-label="Pipeline stages">
+      <div class="stage"><b>Image</b><span class="shape">1 × 32 × 272</span><span>grayscale pixels, 0 to 1</span></div>
+      <div class="stage"><b>CNN</b><span class="shape">68 × 256</span><span>one vector per 4-pixel strip</span></div>
+      <div class="stage"><b>BiLSTM</b><span class="shape">68 × 512</span><span>each strip now knows its neighbours</span></div>
+      <div class="stage on"><b>CTC head</b><span class="shape">68 × 73</span><span>one guess per strip, then collapse</span></div>
+      <div class="stage on"><b>Attention decoder</b><span class="shape">21 × 73</span><span>one character per step, looking back at the strips</span></div>
+    </div>
+  </header>
+
+  <!-- 1. pixels -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Step 1 · The input</div>
+      <h2>An image is just a grid of numbers</h2>
+    </div>
+    <p>The renderer drew the line, blurred it, added noise and scaled it to a height of 32 pixels. The model never sees letters, only 32 × 272 = 8,704 brightness values between 0 (black) and 1 (white). Here is the first capital “A” up close: each square is one pixel and its number.</p>
+    <figure>
+      <div class="board"><canvas id="zoom" width="720" height="320" style="width:100%; max-width:720px; height:auto; display:block;" role="img" aria-label="Zoomed pixels of the letter A with their brightness values"></canvas></div>
+      <figcaption>Pixels 0–23 of the 32-pixel-high image. Dark squares have small numbers. The background is not pure white because the contrast jitter made it light grey.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2. CNN -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Step 2 · CNN</div>
+      <h2>Squeeze the height away, keep the width</h2>
+    </div>
+    <p>Each convolution slides 3 × 3 filters over the image and lights up where it finds a pattern: edges first, then strokes, then parts of letters. Pooling halves the size. The trick is that the height is halved four times (32 → 2) and then averaged to 1, but the width only twice (272 → 68). The result is a row of 68 columns, and each column describes a 4-pixel-wide vertical strip of the image.</p>
+    <figure>
+      <div class="board">
+        <div class="fm-grid">
+          <div class="fm-label"><b>After conv 1</b><span class="shape" id="s-fm1"></span></div>
+          <img class="fm" id="fm1" alt="Feature map after the first convolution">
+          <div class="fm-label"><b>After 2 poolings</b><span class="shape" id="s-fm2"></span></div>
+          <img class="fm" id="fm2" alt="Feature map after two pooling steps">
+          <div class="fm-label"><b>After 4 poolings</b><span class="shape" id="s-fm3"></span></div>
+          <img class="fm" id="fm3" alt="Feature map after four pooling steps">
+          <div class="fm-label"><b>CNN output</b><span class="shape" id="s-feat"></span><span style="font-size:13px;color:var(--muted)">first 48 of 256 features</span></div>
+          <img class="fm" id="feat" alt="The CNN output: 48 feature rows by 68 columns">
+        </div>
+      </div>
+      <figcaption>The busiest filter at each stage, stretched to the same width so the columns line up with the image above. Brighter means a stronger response. In the last row, each column is one of the 68 vectors that go to the BiLSTM, and each row is one of the 256 numbers in those vectors.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 3. strips -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Step 3 · Columns become time steps</div>
+      <h2>68 strips, read left to right</h2>
+    </div>
+    <p>Because the width was divided by 4, column <i>t</i> of the CNN output corresponds to pixels 4t to 4t + 3 of the image. From here on, the line is a sequence of 68 steps, just like a sentence is a sequence of words.</p>
+    <figure>
+      <div class="board"><svg id="strips" role="img" aria-label="The input image divided into 68 strips of 4 pixels"></svg></div>
+      <figcaption>Every fourth pixel column starts a new step. Short letters like “i” fit in one or two steps, wide ones like “w” need three or four.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 4. BiLSTM -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Step 4 · BiLSTM</div>
+      <h2>Every strip hears from its neighbours</h2>
+    </div>
+    <p>A strip on its own may hold half a letter. The BiLSTM runs two LSTMs over the 68 steps: one left to right, one right to left, each carrying a memory as it goes. Their outputs are joined, so every step gets 256 + 256 = 512 numbers that describe the strip in the context of the whole line.</p>
+    <figure>
+      <div class="board"><svg id="bilstm" viewBox="0 0 900 190" role="img" aria-label="A forward LSTM passes memory left to right, a backward LSTM right to left, and both feed every step's output"></svg></div>
+      <figcaption>Blue arrows carry the forward memory, gold arrows the backward memory. Only 9 of the 68 steps are drawn.</figcaption>
+    </figure>
+    <figure>
+      <div class="board"><img class="fm" id="enc" alt="BiLSTM output: 48 of 512 features by 68 steps"></div>
+      <figcaption>The real BiLSTM output for this line, first 48 of 512 features. Compare it with the CNN output above: the patterns are smoother, because each step now mixes in information from further away.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5. CTC -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Step 5a · CTC head</div>
+      <h2>One guess per strip, then collapse</h2>
+    </div>
+    <p>The CTC head is a single linear layer: for each of the 68 steps it turns 512 numbers into 73 scores, one per token, and softmax turns them into probabilities. The heatmap shows the probabilities for the blank and for each character that appears in the line. Your trained model is very sure of itself: almost every column has one clear winner.</p>
+    <figure>
+      <div class="board"><svg id="ctc-heat" role="img" aria-label="CTC probabilities per step for blank and each character; one clear winner per column"></svg></div>
+      <figcaption>Rows are tokens, columns are the 68 steps, darker blue means higher probability. The winners form a staircase from top-left to bottom-right that follows the letters. The blank row (top) fills the gaps between letters.</figcaption>
+    </figure>
+    <figure>
+      <div class="board collapse">
+        <div class="step-label">1 · Best token at every step (– = blank)</div>
+        <div class="tape" id="tape-raw"></div>
+        <div class="step-label">2 · Merge repeats</div>
+        <div class="tape" id="tape-merge"></div>
+        <div class="step-label">3 · Remove blanks</div>
+        <div class="typed" id="ctc-out"></div>
+      </div>
+      <figcaption>The collapse rule. Crossed-out cells are removed at that stage. Look at “A A” at the start: two steps predicted the same letter, and merging turns them into one. A double letter like the “ll” in “tall” only survives if a blank sits between the two.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 6. attention -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Step 5b · Attention decoder</div>
+      <h2>Write a character, look, write the next</h2>
+    </div>
+    <p>The attention decoder does not guess per strip. It writes one character at a time. Before each character it scores all 68 strips, turns the scores into weights that add up to 1, and reads a weighted average of the strips (the context vector). Then it predicts the next character from that context and what it has written so far.</p>
+    <p>Move the slider to step through the decoding. The highlighted band on the image shows where the decoder is looking for that character.</p>
+    <div class="control">
+      <label for="t-slider">Decoder step</label>
+      <input type="range" id="t-slider" min="0" max="20" value="6">
+      <span class="readout" id="t-readout"></span>
+      <button type="button" id="play" aria-pressed="false">Play</button>
+    </div>
+    <div class="two">
+      <figure>
+        <h3>Working model <span class="pill ok">reads the line</span></h3>
+        <div class="board"><svg id="att-good-img" role="img" aria-label="Attention weights of the working model shown over the image"></svg></div>
+        <div class="typed" id="typed-good"></div>
+        <div class="board"><svg id="att-good" role="img" aria-label="Attention matrix of the working model: a diagonal from top-left to bottom-right"></svg></div>
+        <figcaption>CNN and BiLSTM taken from your CTC model, decoder trained on top. The attention moves right one letter at a time, so the weights form a diagonal.</figcaption>
+      </figure>
+      <figure>
+        <h3>Trained from scratch <span class="pill fail">cold start</span></h3>
+        <div class="board"><svg id="att-bad-img" role="img" aria-label="Attention weights of the failing model shown over the image"></svg></div>
+        <div class="typed bad" id="typed-bad"></div>
+        <div class="board"><svg id="att-bad" role="img" aria-label="Attention matrix of the failing model: all weight stuck on the first column"></svg></div>
+        <figcaption>Experiment B (additive + location, from scratch). After “A” the attention sits on column 0 at every step, so the image stops telling it anything and it writes a memorised caption instead.</figcaption>
+      </figure>
+    </div>
+    <div class="legend"><span><span class="swatch" style="background: rgb(var(--heat));"></span>attention weight, working model</span><span><span class="swatch" style="background: rgb(var(--heat-bad));"></span>attention weight, failing model</span><span>rows = characters written, columns = the 68 strips</span></div>
+  </section>
+
+  <!-- 7. cold start -->
+  <section class="scene">
+    <div class="scene-head">
+      <div class="eyebrow">Why the attention model fails from scratch</div>
+      <h2>A chicken-and-egg problem</h2>
+    </div>
+    <p>To learn good image features, the CNN needs the decoder to look at the right strip. To learn where to look, the decoder needs image features that are worth looking at. At the start neither is true, so the gradient that reaches the CNN is almost noise.</p>
+    <p>Meanwhile there is a shortcut. Teacher forcing always feeds the correct previous character, and captions are very repetitive, so the decoder can lower its loss just by learning English: after “A man in a” the next word is probably “blue” or “black”. That is exactly the sentence every failing run ended up writing.</p>
+    <p>CTC has no shortcut. Each step must predict the character at its own strip, so from the first batch the gradient tells every column of the CNN what it should see.</p>
+    <figure>
+      <div class="board">
+        <table>
+          <thead><tr><th>Run</th><th>Scoring</th><th>Location</th><th>Learning rate</th><th>Best val CER</th><th>Outcome</th></tr></thead>
+          <tbody>
+            <tr><td>A</td><td>additive</td><td>no</td><td class="num">1e-3</td><td class="num">0.718</td><td><span class="pill fail">caption</span></td></tr>
+            <tr><td>B</td><td>additive</td><td>yes</td><td class="num">1e-3</td><td class="num">0.687</td><td><span class="pill fail">caption</span></td></tr>
+            <tr><td>C</td><td>additive</td><td>yes</td><td class="num">3e-4</td><td class="num">0.827</td><td><span class="pill fail">caption</span></td></tr>
+            <tr><td>D</td><td>additive</td><td>yes</td><td class="num">3e-3</td><td class="num">0.687</td><td><span class="pill fail">caption</span></td></tr>
+            <tr><td>E</td><td>dot</td><td>yes</td><td class="num">1e-3</td><td class="num">0.694</td><td><span class="pill fail">caption</span></td></tr>
+            <tr><td>F</td><td>dot</td><td>no</td><td class="num">1e-3</td><td class="num">0.702</td><td><span class="pill fail">caption</span></td></tr>
+            <tr><td>CTC-initialised</td><td>additive</td><td>yes</td><td class="num">1e-3</td><td class="num">0.428</td><td><span class="pill ok">reads</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption>All runs: 2,000 training lines, 300 unseen validation lines. A–F: 15 epochs from scratch. CTC-initialised: 5 epochs on top of the CTC model's CNN and BiLSTM, and still improving.</figcaption>
+    </figure>
+    <p class="note">The fix is to break the loop: give the CNN a useful signal early (a joint CTC loss, or starting from the CTC encoder) or make the first alignments easy (short lines first). The scoring function and the learning rate were never the bottleneck.</p>
+  </section>
+</div>
+
+<script>
+const D = {"text":"A boy rides a swing.","W":272,"H":32,"image":"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","fm1":"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","fm1_shape":[64,32,272],"fm2":"iVBORw0KGgoAAAANSUhEUgAAAEQAAAAICAAAAABl4gZ5AAACM0lEQVR4nAEoAtf9AU3OD0K8AfM3JaIDAQIGAPQKAv0EAvoG9gtGrgURYpD0FvQDBvUQ7Qb/6Rr7+wIK9gID/P4R/fsd4QPyB/4D9RX3/wbYAhfv1skc8PvDy35J6i1IKy8p8yvt6gYDQNaSIywtuSojGADsHgfgAOgVIfQA9PYHBQH4/P3n8/EQH/QQD+8EG+L08vwFAgT/APMDCAH08nksPfaSO+4m6PodGglXrHXP7/mf4gwbxYQiKFJPFgsNEJDqBQQ664x4SZArZoxiH18fR/xNGIBcI/cKAv/3AO0KJ/r96u963f8AohT9TRYA7PisVIxS0O0A9aTjV2pBIk0BI/4zb41KDfHhwyu4MVXL8W16ytjqq/i2wcTKCfULBPQxAeHQc9v38zH41xxTtNND5tsQBNcnHg8LMethv2ACNjxfworQR/Sqrf0e7zqF1cfuagACrwb1CcAT8QATGs37gejgAcV43EPk4CEY6fgPt3bM6uVdkjLgAzXp6z3kOuLoMfQB6N1LzCSXRtFF0zrTCPUUGZojQM8F3yQNM9kO5xhije8oC/ekAW2ZARf2/g35Buz/AwUC+Uzr0w31/wD7DgTfFPYL/gX+9AgK5xLtF/kL5gv8DAEG6wAHB/QN9gf3Awb1CvJQCcUN9+IBAY2yBPn9EOIKAgYE/f76GfD25yT/+PkLBv0O6g389AcG9/kX9P8X4A/2DQHmDvsEAf0j3gUO9fcO/AD6BAZK8p0XAQTXHE0Is1bB2ogAAAAASUVORK5CYII=","fm2_shape":[128,8,68],"fm3":"iVBORw0KGgoAAAANSUhEUgAAAEQAAAACCAAAAADEeSUfAAAAlUlEQVR4nAGKAHX/AAD/q+KyXRqLLQBxY44AXJE8E2s8KnoJAG4AJm4fppNdAF+EAEKLAB97AIVtC0ouHIRnBEOMKxQAVy0Ag3duBHIoGQAVAgCu7/G36vrV4AC09+YA7BL/7XYH7AkRNzcA/uXh5s3rAAIAANf1ABXkBfLn9QHi5OYl/BDkWDIA8OQAyukY/FhV/wAQjD04kkFKzY0AAAAASUVORK5CYII=","fm3_shape":[256,2,68],"feat":"iVBORw0KGgoAAAANSUhEUgAAAEQAAAAwCAAAAACNy4O5AAAKC0lEQVR4nC2WWYwdV53Gv7PUqVPLrbp193v79u399upe4qXbdhwCTpxxCGCSECaJhXiJRkFiCYsEo5HmYYRgpNFoJN54QAjEy8zkZQRIeUGEsCTBnsTYEMeOjTtpd7v3vkvfrTZ0bvNUOlWnqs7/fL/v+x9CYi8Z1P2WIQLDcT9o8a7XidmhDJI7leQH7aRP/A7gtKZP//Z9oxMA1lzmV5Q2GC084G0ARNoEjGuxPEBIYtHTfLdk9LabY8fdH9W5aKHY8DYi3iOabMRMtCl4GMISJ/9/J1WLYjcidc0HCEAjK2dtaLp9p0NyXUKTI903YC0/+p8Hzqk/bSHRgLvQ3Vnrpo7VrsVmYs9H0jg5/90YIDFNoAZKAEBGPeQ7NZBYjWAE3tT11Oi723AT4Ya6QzVCW7Da8dEE4ATTq+9cBZCzV0O1FK7NFAnSlwSDhvLowjBjpvkJmcs6FcEACqNMYMLIu1TASsLxxjVeMMFsixB4MEGg+cJsRpFjtQ+0wZ06uNaGPrPfMpx9OnS1BdO/zH/sywTL34jw1OxP74MYrcy82HunsFephG/X+7WgyMHP/IsELCBVBIe1UEYagsEBB2xA6AC4GkArAJY1Ip/9FIVMixlNCWQ6mzGJZecV/T8YkgchtEB0QgCldRkE3Kb10DG2EjVI2ULPsA4nn7j7P0B2YOX3N3sGkftH21R97MlxAPbZ0wzVKpn60iCAFclLkOePAVMc1hwIyMWqmj0KPPncx1wDOP/yIjB7FpAEMrHtnUu+9T6E2YhYZuqlB7e3fmEO1e9Lsc28GukJSmfnbv0OWJrYvL4nOywcPPXWXtSNISdLTvu1rvp2/vNlgDiwCJ0qUwMA0wA6Qcx/+3dKnEUN0AWs739RUzxwICMEHwZOLTowXAZwjtIZcgiZWK6/H46Ur2f19YB4XR/jQfxQfDVC810N6LLk+C/WfM3XuwEftnurC/vA22mWJX4ooojA9EnywDfjHjPNjaKtyej+zuj0O9pdp9NzjXaN59ZZbg9dINEhPRTJOi7cbWwWq6+nW8na525c75kUswgO0964biSHZMQyq1dSgsv/iy/MzVdYzbbgaIhSXXsW8HyPILDF6O8nL5byr9Ndq97+JedoAdCX8pAU6XM5zD7toVBVvACnstA/aaG4pOCAhrGnFSawYX/8mePsOGCdygIlTQkHmMWdGkbHmu1riJngrrdmiI/oM+9dMzKjrT/2bTa0miGbmlkDIKyDmE6M7+7vbUMEZkq7oz5dGh9Wl+fGADtBWKpvSY5zX8Sxf3pc8cgFmPIYU3hTEAng5W+CwxDFnHskGCCGn/76jKpLwQ0M/vNLBhsZUsoRUEJVaT+4CDiPfPvRIw+bmTTA3BMWwFBQPzCeaL9ZA1It3jQSgW+T2iGMNlYSvx24dP3aXuwrc8SopOr3e1T5ATDal9bfxmT6L4XsRm0nNjl6vxnSCWxzj6dzu22+AQGLMC3czJ4inV4PuruFmHvncq91idEEjTQaDKKRaO039Xs3WQiEFHHu0yNxfKilUu01P08BH6046uwsNV698zUK9LYABNtv7q8gboJo8CeqG/snidnwNrts2IJCSHFOAZMB9mKKgpmA+dDi3wmfeiFNmcpQQpUjGFV6oght4LkKhEznUqpa0HPLv34bA619gDNlJiuIF242dRut/Il374iuewAtjMaPfXQ1Bg94ABohZZUjeqMBsMwmLDi6ZTHOMfCZfy3L6mdT34svmMBCCpkpYITDNkGV0MCRdiL1jed/eBGm0EAohs9LVQbgLYwqYROAWCyIRB+TkkAZOP0JoGhDqAXL7zzfJwUYOGGbdh7ezDGOlNnfCyQh0kQOWrJQzODkDOU69AlWWua5tP7YHLCQhiaRBBYS0IDJLOjKctWcnss/Mk9wpgjwPp/MrkHztlCx3juCgme3spW71FoLRzabhESgkWNvGMppR5UNg5TurHrtKA5itRZ3yA5rsBYCW9+qF1NVL2Yk2EsO1Xxnqio3S4TMOIwi1BKQyIxJu6DDl/7tNzBweOpyjgI6RY19aQC8fWUvx2PL6dxqZENOov0bMLecs63u7Xw2Ox8GePgrs62AViac5oPTo/E2jf29Bq6+FoVZTUkq4DmAsTCVAEgC+iKnAmMTBXCSPQ42Dlz+HJwEjo+CYu55IvJIkwnNrNg5aM555ProqMbRDeBqzGXt+/p4rd3gi6uNXQCuN3/ndo/THpOHxDxUWsb1yF3+HSXMb2o+RHG7H0rukyWAVYgBmIpenTPL1XMCGLw0AJ0DXFrgj6yI/tP+X4dkYunlaQVDUr0lvvz0MyeqpRXAycwBi2l4VvpTBdhwLiWzp4YxcpGzYaQuEDZBFycxXgCfnRIYXpH09KVUdcAEhX3i0y9+VprAE49PS/YxYHwcWaAw/4XLNP2zpwQ9AQwKTDNcVj5LnoH9D69Mlb9lgTwxCv6PwypTAJofE6bQz5sgKrUKSeYATvnZDNJPTR1hUbFcYNDVNCANwGGF7+TABkETebUDAKYupgDj+ykBkSNiNg1pQBOuhsK3zvVD2pWGpWNmwtRBXD0hYWCpACBFZKnPKgFhohMJWa+GtUz12lo41KrprMlZOtNtfYREqlHvxkzrFMZuNKI+zqBF64ClO/QWLGtLHbco4sCXSdnErXth7421ilzfTvks0ZETrNkNbLYa5mIwS856NcEtxNyCtv+hqXX325DRFs8tGeq4pfm2tg+aMteDsV1t2m9dA8qV9pqUrt++FwdxsmE0Aa+e2Y0IiUNvH7MPAp508e7y2L3OFagebYzfa2DE/XNg9AJUBK3rB5l74Uz8HsYe/uNfALtJqxs10bPFQQQUU3+2JXto/WaXQ+tJEdZV3qsTyrKwMPTSGBtcXJo8/3DGVJ0k4QAjz2r9uJhRuZH9glLCKhp4aA4wzAtLJaD4ZIYYBML1D1RsPjCjQM+smkZ+o9mDoC++Fgx5V7cZ74qe2yUdM73OWNw1D52WjzPjP0FyeNuj+sZGKIi3L7LDmx9o2X13h4U5+1Lqh7vN2cqHHx4sv4UCOQgEryG9y7hfiVdVhhnW5otXrmD+NulSnwxE60pimVuLAPtM/KZeKH+Q1sJbu0rJxfDOjFjtsfJmvYMoiPM7kd6hMqbTzt2NcKzVO5SNcNlpb7zf78UnHk0yoQFjk0DVAkYtaWLiq/89yZJnp4k9Q5HLQcjciAIvP6UaxuwP/gvIzc/kzPm5xFFSAxrH2RdMTL1iu9VpD9ASQlC+8lgf2H5WIFdSZ1IOpM5700WmZYtHEX30FG4YF4/99Q47IPkDBAHIhcT/Ao8l/4C2e9+PiSe3yycf3K0Tbyy82RTNHmRnufwqIOP0RgwSc5LvxjWIHirsr6BmE8huq7RjxRd+SYdeBYsjUCjeZVttFYlhtpA6U/55LW6aLHs30QD+BhjSVMtm1SPIAAAAAElFTkSuQmCC","feat_shape":[256,68],"enc":"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","enc_shape":[68,512],"T":68,"path":["A","A","<blank>","<blank>","<blank>"," "," ","<blank>","b","<blank>","<blank>","<blank>","<blank>","o","<blank>","<blank>","y","y","<blank>"," "," ","<blank>","r","<blank>","<blank>","i","<blank>","d","d","<blank>","<blank>","e","e","<blank>","<blank>","s","<blank>","<blank>"," "," ","a","a","<blank>","<blank>"," "," ","s","s","<blank>","<blank>","w","<blank>","<blank>","<blank>","i","i","<blank>","n","n","<blank>","<blank>","<blank>","g","<blank>","<blank>",".",".","."],"path_p":[1.0,1.0,0.576,1.0,0.998,1.0,1.0,0.781,1.0,0.822,1.0,1.0,0.997,1.0,1.0,1.0,1.0,0.984,1.0,1.0,1.0,0.995,1.0,0.985,0.999,1.0,1.0,0.924,1.0,1.0,1.0,0.927,1.0,1.0,1.0,1.0,0.65,0.987,1.0,1.0,0.583,1.0,1.0,0.62,1.0,0.989,0.996,1.0,1.0,1.0,1.0,0.993,1.0,1.0,0.998,1.0,0.996,1.0,0.991,1.0,1.0,0.694,1.0,1.0,1.0,1.0,1.0,0.826],"rows":["<blank>"," ",".","A","a","b","d","e","g","i","n","o","r","s","w","y"],"probs":[[0.0,0.0,0.576,1.0,0.998,0.0,0.0,0.781,0.0,0.822,1.0,1.0,0.997,0.0,1.0,1.0,0.0,0.016,1.0,0.0,0.0,0.995,0.0,0.985,0.999,0.0,1.0,0.076,0.0,1.0,1.0,0.073,0.0,1.0,1.0,0.0,0.65,0.987,0.0,0.0,0.417,0.0,1.0,0.62,0.0,0.011,0.004,0.0,1.0,1.0,0.0,0.993,1.0,1.0,0.002,0.0,0.996,0.0,0.009,1.0,1.0,0.694,0.0,1.0,1.0,0.0,0.0,0.174],[0.0,0.0,0.0,0.0,0.002,1.0,1.0,0.219,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.013,1.0,1.0,0.0,0.0,0.0,0.38,1.0,0.989,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,0.826],[1.0,1.0,0.424,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.583,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.178,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.924,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.927,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.306,1.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.998,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.004,1.0,0.991,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.003,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.005,1.0,0.015,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.35,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.996,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.007,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.984,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]],"ctc_pred":"A boy rides a swing.","good_chars":["A"," ","b","o","y"," ","r","i","d","e","s"," ","a"," ","s","w","i","n","g",".","<eos>"],"good_w":[[0.092,0.017,0.197,0.261,0.348,0.085,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.001,0.015,0.296,0.535,0.076,0.065,0.01,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.007,0.016,0.413,0.452,0.097,0.016,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.026,0.721,0.247,0.005,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.035,0.473,0.464,0.026,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.004,0.059,0.423,0.509,0.004,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.024,0.968,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.127,0.852,0.02,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.099,0.127,0.687,0.083,0.002,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.046,0.164,0.529,0.213,0.046,0.002,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.01,0.045,0.282,0.331,0.267,0.063,0.002,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.002,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.005,0.004,0.019,0.056,0.096,0.125,0.174,0.395,0.099,0.018,0.002,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.039,0.416,0.536,0.006,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.011,0.525,0.463,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.025,0.07,0.436,0.391,0.067,0.008,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.009,0.006,0.0,0.0,0.001,0.007,0.133,0.43,0.345,0.06,0.006,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.002,0.009,0.111,0.673,0.2,0.004,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.004,0.058,0.274,0.409,0.227,0.028,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.005,0.054,0.205,0.45,0.257,0.027,0.001,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.002,0.001,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.03,0.054,0.069,0.188,0.301,0.283,0.056,0.01,0.002],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.001,0.011,0.213,0.774]],"bad_chars":["A"," ","b","o","y"," ","i","n"," ","a"," ","b","l","a","c","k"," ","d","o","g"," "],"bad_w":[[0.088,0.006,0.006,0.012,0.023,0.031,0.031,0.031,0.026,0.02,0.013,0.008,0.009,0.009,0.01,0.008,0.008,0.008,0.009,0.014,0.023,0.027,0.027,0.027,0.026,0.026,0.025,0.027,0.026,0.02,0.014,0.007,0.004,0.003,0.003,0.004,0.004,0.004,0.003,0.003,0.004,0.006,0.007,0.008,0.006,0.007,0.005,0.004,0.003,0.002,0.002,0.003,0.008,0.015,0.021,0.024,0.025,0.025,0.023,0.024,0.024,0.026,0.021,0.013,0.007,0.006,0.007,0.005],[0.0,0.0,0.006,0.018,0.034,0.044,0.046,0.045,0.04,0.03,0.017,0.009,0.01,0.009,0.01,0.007,0.007,0.007,0.008,0.014,0.025,0.031,0.03,0.031,0.029,0.029,0.028,0.03,0.028,0.021,0.014,0.006,0.003,0.001,0.001,0.002,0.002,0.002,0.002,0.001,0.002,0.005,0.006,0.007,0.004,0.006,0.004,0.003,0.001,0.001,0.001,0.002,0.006,0.016,0.023,0.027,0.028,0.027,0.025,0.026,0.026,0.028,0.023,0.012,0.005,0.004,0.005,0.004],[0.614,0.038,0.009,0.006,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.006,0.006,0.006,0.006,0.006,0.006,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005],[0.259,0.025,0.015,0.011,0.011,0.011,0.01,0.01,0.01,0.01,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.01,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.01,0.01,0.01,0.01,0.011,0.011,0.011,0.01,0.01,0.011,0.011,0.011,0.011],[0.947,0.007,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001],[0.834,0.012,0.004,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.003,0.003,0.003,0.003,0.002,0.002,0.003,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.003,0.003,0.003,0.003,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002],[0.475,0.014,0.009,0.008,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.008,0.009,0.008,0.008,0.008,0.008,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.008,0.008,0.008,0.008],[0.844,0.012,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002],[0.62,0.038,0.01,0.006,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.006,0.006,0.005,0.005,0.005,0.006,0.006,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.006,0.006,0.006,0.006,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005],[0.8,0.042,0.006,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.002,0.002,0.002,0.003,0.002,0.002,0.003,0.003,0.003,0.003,0.003,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002],[0.678,0.034,0.008,0.005,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.004,0.004,0.004,0.005,0.004,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004],[0.767,0.043,0.006,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003],[0.562,0.036,0.01,0.006,0.006,0.006,0.006,0.006,0.005,0.005,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.007,0.007,0.006,0.006,0.006,0.007,0.007,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.007,0.007,0.007,0.007,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006,0.006],[0.953,0.009,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001],[0.172,0.033,0.02,0.013,0.012,0.011,0.011,0.01,0.01,0.01,0.011,0.011,0.011,0.012,0.011,0.012,0.012,0.012,0.012,0.012,0.012,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.012,0.013,0.014,0.014,0.013,0.013,0.013,0.014,0.013,0.013,0.012,0.012,0.012,0.013,0.012,0.013,0.013,0.014,0.014,0.014,0.014,0.013,0.012,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.011,0.012,0.012,0.011,0.012],[0.929,0.016,0.002,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001,0.001],[0.248,0.02,0.015,0.011,0.011,0.01,0.01,0.009,0.009,0.01,0.01,0.011,0.01,0.011,0.01,0.011,0.011,0.011,0.011,0.011,0.011,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.011,0.011,0.012,0.013,0.013,0.012,0.012,0.012,0.013,0.012,0.012,0.011,0.011,0.011,0.012,0.011,0.012,0.012,0.013,0.013,0.013,0.013,0.012,0.011,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.011,0.011,0.011,0.011],[0.806,0.015,0.004,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003,0.003],[0.83,0.017,0.004,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.003,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002],[0.696,0.033,0.009,0.005,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.005,0.005,0.004,0.004,0.004,0.005,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.005,0.005,0.005,0.005,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004],[0.866,0.014,0.003,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002,0.002]]};
+const NS = "http://www.w3.org/2000/svg";
+const src = b => "data:image/png;base64," + b;
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const T = D.T, W = D.W, H = D.H;
+const fmt = s => `${s[0]} × ${s[1]}` + (s.length > 2 ? ` × ${s[2]}` : "");
+
+document.getElementById("hero-img").src = src(D.image);
+for (const k of ["fm1", "fm2", "fm3", "feat"]) {
+  document.getElementById(k).src = src(D[k]);
+  document.getElementById("s-" + k).textContent = fmt(D[k + "_shape"]);
+}
+document.getElementById("enc").src = src(D.enc);
+
+// ---------- step 1: zoomed pixels (read from the embedded PNG) ----------
+(function zoom() {
+  const img = new Image();
+  img.onload = () => {
+    const off = document.createElement("canvas");
+    off.width = W; off.height = H;
+    const octx = off.getContext("2d");
+    octx.drawImage(img, 0, 0);
+    const px = octx.getImageData(0, 0, 24, 32).data;
+    const c = document.getElementById("zoom"), ctx = c.getContext("2d");
+    const cell = 10, cols = 24, rows = 32;
+    c.width = cols * cell * 3; c.height = rows * cell;
+    const dark = document.documentElement.getAttribute("data-theme") === "dark" ||
+      (document.documentElement.getAttribute("data-theme") !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+    // left: pixel squares; right: the numbers of the outlined patch
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const v = px[(y * 24 + x) * 4];
+      const g = dark ? 255 - v : v;
+      ctx.fillStyle = `rgb(${g},${g},${g})`;
+      ctx.fillRect(x * cell, y * cell, cell - 1, cell - 1);
+    }
+    // number panel for rows 8-23, cols 4-15
+    const x0 = cols * cell + 24, nc = 12, nr = 16, ncw = (c.width - x0) / nc, nch = c.height / nr;
+    ctx.font = `${Math.floor(nch * 0.42)}px JetBrains Mono, Menlo, monospace`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const ink = getComputedStyle(document.body).color;
+    for (let r = 0; r < nr; r++) for (let q = 0; q < nc; q++) {
+      const v = px[((r + 8) * 24 + (q + 4)) * 4] / 255;
+      const g = Math.round((dark ? 1 - v : v) * 255);
+      ctx.fillStyle = `rgb(${g},${g},${g})`;
+      ctx.fillRect(x0 + q * ncw, r * nch, ncw - 1, nch - 1);
+      ctx.fillStyle = (dark ? v < 0.5 : v > 0.5) ? "#1b2330" : "#f5f7fa";
+      ctx.fillText(v.toFixed(2), x0 + q * ncw + ncw / 2, r * nch + nch / 2);
+    }
+    // bracket showing the zoomed patch
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--gold").trim();
+    ctx.lineWidth = 2;
+    ctx.strokeRect(4 * cell - 1, 8 * cell - 1, 12 * cell + 1, 16 * cell + 1);
+  };
+  img.src = src(D.image);
+})();
+
+// ---------- step 3: strips over the image ----------
+(function strips() {
+  const s = 3, svg = document.getElementById("strips");
+  const w = W * s, h = H * s, top = 18;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h + top + 26}`);
+  el("image", { href: src(D.image), x: 0, y: top, width: w, height: h, class: "line-img", preserveAspectRatio: "none", style: "image-rendering: pixelated" }, svg);
+  for (let t = 0; t <= T; t++) {
+    const x = t * 4 * s;
+    el("line", { x1: x, y1: top, x2: x, y2: top + h, stroke: "var(--blue)", "stroke-width": t % 10 === 0 ? 1.6 : 0.6, opacity: t % 10 === 0 ? 0.9 : 0.45 }, svg);
+    if (t % 10 === 0 && t < T) {
+      const tx = el("text", { x: x + 2, y: 12, "font-size": 12, fill: "var(--blue)", "font-family": "JetBrains Mono, monospace" }, svg);
+      tx.textContent = "t=" + t;
+    }
+  }
+  const lab = el("text", { x: w / 2, y: top + h + 20, "text-anchor": "middle", "font-size": 13, fill: "var(--muted)", "font-family": "Sora, sans-serif" }, svg);
+  lab.textContent = `${T} steps × 4 pixels = ${T * 4} pixels wide`;
+})();
+
+// ---------- step 4: BiLSTM diagram ----------
+(function bilstm() {
+  const svg = document.getElementById("bilstm");
+  const defs = el("defs", {}, svg);
+  for (const [id, col] of [["ab", "var(--blue)"], ["ag", "var(--gold)"], ["ai", "var(--muted)"]]) {
+    const m = el("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs);
+    el("path", { d: "M0,0 L10,5 L0,10 z", fill: col }, m);
+  }
+  const n = 9, x0 = 70, dx = 95;
+  const labels = ["t=0", "t=1", "t=2", "…", "t=33", "…", "t=65", "t=66", "t=67"];
+  for (let i = 0; i < n; i++) {
+    const x = x0 + i * dx;
+    // input
+    el("rect", { x: x - 18, y: 150, width: 36, height: 22, rx: 4, fill: "var(--blue-soft)", stroke: "var(--muted)", "stroke-width": 0.8 }, svg);
+    const tl = el("text", { x, y: 165, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "JetBrains Mono, monospace" }, svg); tl.textContent = labels[i];
+    // forward cell
+    el("rect", { x: x - 22, y: 98, width: 44, height: 26, rx: 5, fill: "var(--panel)", stroke: "var(--blue)", "stroke-width": 1.4 }, svg);
+    // backward cell
+    el("rect", { x: x - 22, y: 56, width: 44, height: 26, rx: 5, fill: "var(--panel)", stroke: "var(--gold)", "stroke-width": 1.4 }, svg);
+    // output
+    el("rect", { x: x - 18, y: 8, width: 36, height: 22, rx: 4, fill: "var(--panel)", stroke: "var(--ink)", "stroke-width": 0.8 }, svg);
+    const ol = el("text", { x, y: 23, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)", "font-family": "JetBrains Mono, monospace" }, svg); ol.textContent = "512";
+    el("line", { x1: x, y1: 150, x2: x, y2: 126, stroke: "var(--muted)", "stroke-width": 1, "marker-end": "url(#ai)" }, svg);
+    el("line", { x1: x, y1: 56, x2: x, y2: 32, stroke: "var(--muted)", "stroke-width": 1, "marker-end": "url(#ai)" }, svg);
+    if (i < n - 1) {
+      el("line", { x1: x + 23, y1: 111, x2: x + dx - 25, y2: 111, stroke: "var(--blue)", "stroke-width": 1.6, "marker-end": "url(#ab)" }, svg);
+      el("line", { x1: x + dx - 23, y1: 69, x2: x + 25, y2: 69, stroke: "var(--gold)", "stroke-width": 1.6, "marker-end": "url(#ag)" }, svg);
+    }
+  }
+  const lf = el("text", { x: 8, y: 115, "font-size": 12, fill: "var(--blue)", "font-family": "Sora, sans-serif" }, svg); lf.textContent = "→ fwd";
+  const lb = el("text", { x: 8, y: 73, "font-size": 12, fill: "var(--gold)", "font-family": "Sora, sans-serif" }, svg); lb.textContent = "← bwd";
+  const li = el("text", { x: 8, y: 165, "font-size": 12, fill: "var(--muted)", "font-family": "Sora, sans-serif" }, svg); li.textContent = "CNN";
+  const lo = el("text", { x: 8, y: 23, "font-size": 12, fill: "var(--muted)", "font-family": "Sora, sans-serif" }, svg); lo.textContent = "out";
+})();
+
+// ---------- step 5a: CTC heatmap ----------
+(function ctc() {
+  const svg = document.getElementById("ctc-heat");
+  const rows = D.rows, cw = 11, rh = 18, left = 64, top = 22;
+  const w = left + T * cw + 8, h = top + rows.length * rh + 10;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  for (let t = 0; t < T; t += 10) {
+    const tx = el("text", { x: left + t * cw + cw / 2, y: 14, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)", "font-family": "JetBrains Mono, monospace" }, svg);
+    tx.textContent = t;
+  }
+  rows.forEach((r, i) => {
+    const y = top + i * rh;
+    const lab = el("text", { x: left - 8, y: y + rh * 0.68, "text-anchor": "end", "font-size": 12, fill: "var(--ink)", "font-family": "JetBrains Mono, monospace" }, svg);
+    lab.textContent = r === "<blank>" ? "blank" : (r === " " ? "space" : r);
+    el("rect", { x: left, y: y + 1, width: T * cw, height: rh - 2, fill: "var(--bg)" }, svg);
+    for (let t = 0; t < T; t++) {
+      const p = D.probs[i][t];
+      if (p < 0.02) continue;
+      el("rect", { x: left + t * cw, y: y + 1, width: cw - 1, height: rh - 2, fill: "rgb(var(--heat))", "fill-opacity": Math.min(1, p).toFixed(3) }, svg).appendChild(
+        Object.assign(document.createElementNS(NS, "title"), { textContent: `step ${t}: P(${lab.textContent}) = ${p.toFixed(3)}` }));
+    }
+  });
+})();
+
+// ---------- step 5a: collapse ----------
+(function collapse() {
+  const path = D.path.map(c => c === "<blank>" ? "–" : c);
+  const raw = document.getElementById("tape-raw"), mer = document.getElementById("tape-merge");
+  const cell = (ch, cls) => { const s = document.createElement("span"); s.className = "cell " + cls; s.textContent = ch === " " ? "␣" : ch; return s; };
+  let prev = null;
+  path.forEach(c => {
+    const repeat = c === prev;
+    raw.appendChild(cell(c, (c === "–" ? "blank " : "") + (repeat ? "gone" : "")));
+    prev = c;
+  });
+  prev = null;
+  path.forEach(c => {
+    if (c === prev) { prev = c; return; }
+    mer.appendChild(cell(c, c === "–" ? "blank gone" : ""));
+    prev = c;
+  });
+  document.getElementById("ctc-out").textContent = D.ctc_pred;
+})();
+
+// ---------- step 5b: attention ----------
+function attMatrix(id, chars, weights, heatVar) {
+  const svg = document.getElementById(id);
+  const cw = 6, rh = 15, left = 40, top = 6;
+  const n = chars.length, w = left + T * cw + 4, h = top + n * rh + 20;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const rowsG = [];
+  chars.forEach((c, i) => {
+    const y = top + i * rh;
+    const g = el("g", {}, svg);
+    const lab = el("text", { x: left - 6, y: y + rh * 0.72, "text-anchor": "end", "font-size": 11, fill: "var(--ink)", "font-family": "JetBrains Mono, monospace" }, g);
+    lab.textContent = c === " " ? "␣" : (c === "<eos>" ? "eos" : c);
+    el("rect", { x: left, y: y + 1, width: T * cw, height: rh - 2, fill: "var(--bg)" }, g);
+    weights[i].forEach((p, t) => {
+      if (p < 0.02) return;
+      el("rect", { x: left + t * cw, y: y + 1, width: cw - 0.5, height: rh - 2, fill: `rgb(var(${heatVar}))`, "fill-opacity": Math.min(1, p * 1.6).toFixed(3) }, g);
+    });
+    const hl = el("rect", { x: left - 36, y: y + 0.5, width: T * cw + 36, height: rh - 1, fill: "none", stroke: "var(--ink)", "stroke-width": 1, rx: 2, opacity: 0 }, g);
+    rowsG.push(hl);
+  });
+  const ax = el("text", { x: left + T * cw / 2, y: h - 4, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)", "font-family": "Sora, sans-serif" }, svg);
+  ax.textContent = "strip 0 → 67";
+  return rowsG;
+}
+function attImage(id, heatVar) {
+  const svg = document.getElementById(id), s = 1.6;
+  const w = W * s, h = H * s;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h + 26}`);
+  el("image", { href: src(D.image), x: 0, y: 0, width: w, height: h, class: "line-img", preserveAspectRatio: "none" }, svg);
+  const bars = [];
+  for (let t = 0; t < T; t++) {
+    bars.push(el("rect", { x: t * 4 * s, y: h + 4, width: 4 * s - 0.6, height: 0, fill: `rgb(var(${heatVar}))` }, svg));
+  }
+  const glow = [];
+  for (let t = 0; t < T; t++) glow.push(el("rect", { x: t * 4 * s, y: 0, width: 4 * s, height: h, fill: `rgb(var(${heatVar}))`, "fill-opacity": 0 }, svg));
+  return { bars, glow, h };
+}
+const good = { rows: attMatrix("att-good", D.good_chars, D.good_w, "--heat"), img: attImage("att-good-img", "--heat"), chars: D.good_chars, w: D.good_w, typed: document.getElementById("typed-good") };
+const bad = { rows: attMatrix("att-bad", D.bad_chars, D.bad_w, "--heat-bad"), img: attImage("att-bad-img", "--heat-bad"), chars: D.bad_chars, w: D.bad_w, typed: document.getElementById("typed-bad") };
+const slider = document.getElementById("t-slider");
+slider.max = Math.max(D.good_chars.length, D.bad_chars.length) - 1;
+function show(model, k) {
+  const i = Math.min(k, model.chars.length - 1);
+  model.rows.forEach((r, j) => r.setAttribute("opacity", j === i ? 1 : 0));
+  const wts = model.w[i], mx = Math.max(...wts);
+  wts.forEach((p, t) => {
+    model.img.glow[t].setAttribute("fill-opacity", (0.55 * p / mx).toFixed(3));
+    model.img.bars[t].setAttribute("height", (18 * p / mx).toFixed(2));
+  });
+  const done = model.chars.slice(0, i).map(c => c === "<eos>" ? "" : c).join("");
+  const cur = model.chars[i] === "<eos>" ? "⏎" : (model.chars[i] === " " ? "␣" : model.chars[i]);
+  model.typed.innerHTML = "";
+  model.typed.append(document.createTextNode(done));
+  const s = document.createElement("span"); s.className = "cur"; s.textContent = cur; model.typed.append(s);
+}
+function update() {
+  const k = +slider.value;
+  show(good, k); show(bad, k);
+  const gi = Math.min(k, good.w.length - 1), bi = Math.min(k, bad.w.length - 1);
+  const peak = w => w.indexOf(Math.max(...w));
+  document.getElementById("t-readout").textContent =
+    `step ${k}: working looks at strip ${peak(good.w[gi])}, from-scratch at strip ${peak(bad.w[bi])}`;
+}
+slider.addEventListener("input", update);
+let timer = null;
+document.getElementById("play").addEventListener("click", e => {
+  const b = e.currentTarget;
+  if (timer) { clearInterval(timer); timer = null; b.setAttribute("aria-pressed", "false"); b.textContent = "Play"; return; }
+  b.setAttribute("aria-pressed", "true"); b.textContent = "Pause";
+  timer = setInterval(() => {
+    slider.value = (+slider.value + 1) % (+slider.max + 1);
+    update();
+  }, 550);
+});
+update();
+</script>
+
+</body>
+</html>

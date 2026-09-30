@@ -1,0 +1,22 @@
+{
+  "run_name": "sweep_ctc_transformer_height_48",
+  "encoder": "transformer",
+  "head": "ctc",
+  "attention_score": "additive",
+  "attention_location": true,
+  "ctc_weight": 0.0,
+  "data_dir": "/Users/haiderirfan/Documents/Masters/Studies/neural nets/ocr/data/rendered/h48_s1.0",
+  "train_split": "train",
+  "val_split": "val",
+  "max_samples": null,
+  "val_max_samples": null,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "epochs": 30,
+  "patience": 3,
+  "min_epochs": 5,
+  "grad_clip": 5.0,
+  "grad_accum": 2,
+  "num_workers": 4,
+  "seed": 0
+}

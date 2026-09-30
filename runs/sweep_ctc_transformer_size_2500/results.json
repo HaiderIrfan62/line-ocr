@@ -1,0 +1,33 @@
+{
+  "checkpoint_epoch": 11,
+  "beam_width": 5,
+  "test_data_dir": "/Users/haiderirfan/Documents/Masters/Studies/neural nets/ocr/data/rendered/h32_s1.0",
+  "test_seen": {
+    "greedy": {
+      "cer": 0.006933175984658504,
+      "wer": 0.02839329345353442,
+      "seq_acc": 0.799,
+      "seconds": 524.8
+    },
+    "beam5": {
+      "cer": 0.006851223549851666,
+      "wer": 0.027972027972027972,
+      "seq_acc": 0.8,
+      "seconds": 2995.2
+    }
+  },
+  "test_heldout": {
+    "greedy": {
+      "cer": 0.04641785907459311,
+      "wer": 0.1866206083073553,
+      "seq_acc": 0.253,
+      "seconds": 663.4
+    },
+    "beam5": {
+      "cer": 0.04594253495271344,
+      "wer": 0.1851040525739321,
+      "seq_acc": 0.255,
+      "seconds": 544.6
+    }
+  }
+}

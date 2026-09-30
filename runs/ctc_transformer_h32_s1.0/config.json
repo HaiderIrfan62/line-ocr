@@ -1,0 +1,21 @@
+{
+  "run_name": "ctc_transformer_h32_s1.0",
+  "encoder": "transformer",
+  "head": "ctc",
+  "attention_score": "additive",
+  "attention_location": true,
+  "ctc_weight": 0.0,
+  "data_dir": "data/rendered/h32_s1.0",
+  "train_split": "train",
+  "val_split": "val",
+  "max_samples": null,
+  "val_max_samples": null,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "epochs": 30,
+  "patience": 3,
+  "min_epochs": 5,
+  "grad_clip": 5.0,
+  "num_workers": 4,
+  "seed": 0
+}

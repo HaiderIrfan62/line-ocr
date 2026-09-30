@@ -1,0 +1,19 @@
+{
+  "run_name": "exp_E_dot_location_lr1e-3",
+  "head": "attention",
+  "attention_score": "dot",
+  "attention_location": true,
+  "data_dir": "data/rendered/h32_s1.0",
+  "train_split": "train",
+  "val_split": "val",
+  "max_samples": 2000,
+  "val_max_samples": 300,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "epochs": 15,
+  "patience": 1000,
+  "min_epochs": 1000,
+  "grad_clip": 5.0,
+  "num_workers": 2,
+  "seed": 0
+}

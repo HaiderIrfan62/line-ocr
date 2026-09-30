@@ -1,0 +1,6 @@
+# Tested with Python 3.13.1 on macOS (Apple M4 Pro, PyTorch MPS backend)
+torch==2.12.1
+numpy==2.4.2
+pillow==12.2.0
+matplotlib==3.11.0
+tqdm==4.67.3

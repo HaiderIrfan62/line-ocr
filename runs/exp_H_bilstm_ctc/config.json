@@ -1,0 +1,21 @@
+{
+  "run_name": "exp_H_bilstm_ctc",
+  "encoder": "bilstm",
+  "head": "ctc",
+  "attention_score": "-",
+  "attention_location": "-",
+  "ctc_weight": 0.0,
+  "data_dir": "data/rendered/h32_s1.0",
+  "train_split": "train",
+  "val_split": "val",
+  "max_samples": 2000,
+  "val_max_samples": 300,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "epochs": 15,
+  "patience": 1000,
+  "min_epochs": 1000,
+  "grad_clip": 5.0,
+  "num_workers": 2,
+  "seed": 0
+}

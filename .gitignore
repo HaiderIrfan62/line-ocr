@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# macOS / editor
+.DS_Store
+.vscode/
+
+# Rendered images: ~3.3 GB, rebuilt from the text with `python -m data.build_dataset`
+data/rendered/
+
+# Model checkpoints: ~20 MB each (474 MB in total). Configs, logs, results and
+# predictions of every run are kept, so all reported numbers can be checked.
+runs/*/best.pt
+
+# Development smoke tests (not part of the reported experiments)
+runs/smoke_test/
+runs/smoke_attention/
+
+# Report and chat log are submitted separately by email
+report/
