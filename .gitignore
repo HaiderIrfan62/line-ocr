@@ -9,9 +9,13 @@ __pycache__/
 # Rendered images: ~3.3 GB, rebuilt from the text with `python -m data.build_dataset`
 data/rendered/
 
-# Model checkpoints: ~20 MB each (474 MB in total). Configs, logs, results and
-# predictions of every run are kept, so all reported numbers can be checked.
+# Model checkpoints: ~20 MB each. Only the four main systems are included (~83 MB);
+# for all other runs, configs, logs, results and predictions are kept.
 runs/*/best.pt
+!runs/ctc_bilstm_h32_s1.0/best.pt
+!runs/ctc_transformer_h32_s1.0/best.pt
+!runs/attn_bilstm_h32_s1.0/best.pt
+!runs/attn_transformer_h32_s1.0/best.pt
 
 # Development smoke tests (not part of the reported experiments)
 runs/smoke_test/

@@ -103,4 +103,8 @@ python analyse_length.py
 ```
 
 All runs use seed 0; the settings of every run are stored in `runs/<run>/config.json`.
-Model checkpoints (`best.pt`, ~20 MB each) are not included in the repository.
+
+The trained checkpoints of the four main systems are included (`runs/*_h32_s1.0/best.pt`,
+~20 MB each), so the test results can be reproduced without training: render the images
+(step 2), then run e.g. `python evaluate.py runs/ctc_bilstm_h32_s1.0`. Checkpoints of the
+sweeps and small experiments are not included.
